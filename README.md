@@ -1,10 +1,10 @@
 <p align="center">
   <h1 align="center">🌉 WSB — WebSocket Bridge</h1>
   <p align="center">
-    <strong>High-performance multi-protocol tunnel over WebSocket, written in Rust.</strong>
+    <strong>High-performance multi-protocol tunnel bridge over WebSocket, built in Rust.</strong>
   </p>
   <p align="center">
-    <img alt="Rust" src="https://img.shields.io/badge/Rust-1.70%2B-orange?logo=rust&logoColor=white">
+    <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20(wsb.exe)-0078D6?logo=windows&logoColor=white">
     <img alt="Tokio" src="https://img.shields.io/badge/async-Tokio-blue?logo=rust">
     <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
     <img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blueviolet">
@@ -16,17 +16,18 @@
 
 ---
 
-**WSB** encapsulates and transmits **TCP**, **UDP**, and **HTTP** data streams through **WebSocket** (`ws://` / `wss://`), enabling secure access to any internal service on a remote host — such as **Kaggle Notebooks**, Google Colab, Docker containers, or Linux VMs — via web tunnel services (e.g., **Cloudflare Quick Tunnel**), **without opening raw TCP ports or requiring a static IP**.
+**WSB (`wsb.exe` v0.2.0)** encapsulates and forwards **TCP**, **UDP**, **HTTP**, and **SOCKS5** traffic over **WebSocket** (`ws://` / `wss://`), allowing secure access to internal services on a remote host (e.g., **Kaggle Notebooks**, Google Colab, Docker containers, Linux VMs, or Windows servers) behind web tunnels such as **Cloudflare Quick Tunnel** — **without opening raw TCP/UDP ports or needing a static IP**.
+
+This repository/package includes the ready-to-run Windows executable [`wsb.exe`](wsb.exe) along with sample server and client TOML configurations.
 
 ## Table of Contents
 
 - [Features](#-features)
-- [Architecture](#-architecture--data-flow)
-- [Installation](#-installation)
-- [Build](#-build)
+- [Architecture & Data Flow](#-architecture--data-flow)
+- [Getting Started](#-getting-started)
 - [Quick Start](#-quick-start)
-  - [Server](#1-server-kaggle--remote-host)
-  - [Client](#2-client-local-machine)
+  - [1. Server (Remote Host)](#1-server-remote-host)
+  - [2. Client (Local Windows Machine)](#2-client-local-windows-machine)
 - [Usage Examples](#-usage-examples)
 - [CLI Reference](#%EF%B8%8F-cli-reference)
 - [TOML Configuration](#-toml-configuration)
@@ -39,17 +40,16 @@
 
 | Feature | Description |
 |---|---|
-| 🦀 **Pure Rust & Tokio** | Built on `tokio` + `tokio-tungstenite` + `rustls` — ultra-low latency, high I/O throughput, minimal memory footprint, zero C dependencies. |
-| 🔌 **TCP Tunnel** | Connect to any TCP service: MySQL, PostgreSQL, Redis, SSH, MongoDB, Kafka, etc. |
-| 📡 **UDP Tunnel** | Transport datagrams (DNS, game servers, Syslog) with automatic session tracking and 60s idle timeout. |
-| 🌐 **HTTP Tunnel** | Access web applications (phpMyAdmin, REST APIs, admin dashboards) with **automatic `Host` header rewriting** so Apache/Nginx correctly identifies the virtual host. Supports keep-alive, chunked transfer, and Upgrade/WebSocket passthrough. |
-| 🧦 **SOCKS5 Dynamic Proxy** | Built-in local SOCKS5 proxy — browsers, `curl`, database GUIs, and SSH can access **any port/service** on the remote server through a single port. Supports IPv4, IPv6, and domain names. |
-| 🔒 **Security** | Token-based authentication with constant-time comparison at handshake. Auto-generated 256-bit cryptographically secure tokens, or bring your own. Server-side `allowed_targets` whitelist. |
-| ⚙️ **Flexible Configuration** | TOML config files + CLI flags + environment variables — mix and match freely. |
+| ⚡ **Ready-to-Run Binary** | Ships as a standalone Windows executable (`wsb.exe` v0.2.0) powered by Rust + Tokio (`tokio-tungstenite`) — low latency, minimal memory usage, zero runtime dependencies. |
+| 🔌 **TCP Tunnel** | Forward any TCP service: MySQL, PostgreSQL, Redis, SSH, MongoDB, Kafka, etc. |
+| 📡 **UDP Tunnel** | Forward UDP datagrams (up to 64 KB per packet, e.g., DNS, Syslog, game servers) with automatic per-peer session tracking (100-packet queue) and a 60s idle timeout. |
+| 🌐 **HTTP Tunnel** | Access remote web apps (phpMyAdmin, REST APIs, admin dashboards) with **automatic `Host` header rewriting** to the target address, supporting HTTP/1.1 Keep-Alive, `Content-Length`, `Transfer-Encoding: chunked`, and `Upgrade`/WebSocket passthrough. |
+| 🧦 **SOCKS5 Dynamic Proxy** | Built-in SOCKS5 proxy (`CONNECT` with no-auth) supporting IPv4, IPv6, and domain names — route browsers, `curl`, database GUIs, and SSH to **any remote port/host** through one local port. |
+| 🔒 **Security** | Constant-time token verification during handshake, auto-generated 256-bit (64-hex) tokens or custom static tokens, plus an optional server-side `allowed_targets` whitelist. |
+| ⚙️ **Flexible Configuration** | Combine TOML config files (`config.server.toml`, `config.client.toml`), CLI flags, and environment variables (`WS_BRIDGE_LISTEN`, `WS_BRIDGE_URL`, `WS_BRIDGE_TOKEN`, `RUST_LOG`). |
 | ☁️ **Cloudflare Tunnel Ready** | Works seamlessly with `cloudflared tunnel --url http://127.0.0.1:8766`. |
-| 🏗️ **Cross-Platform TLS** | Windows uses `native-tls`; Linux/macOS uses `rustls` — clean builds on all platforms. |
-| 🫀 **WebSocket Keepalive** | Ping frames every 25s to keep connections alive through proxies/CDNs. TCP half-close semantics are preserved end-to-end. |
-| 🔄 **IPv4-First Fallback** | Client automatically prefers IPv4, falls back to IPv6, with a 10s timeout per address. |
+| 🔐 **TLS & Network Resilience** | Uses `native-tls` on Windows (`rustls` on Linux/macOS builds). Client resolves DNS and attempts **IPv4 addresses before IPv6** (10s timeout per address) with `TCP_NODELAY` enabled. |
+| 🫀 **Keepalive & Half-Close** | Sends WebSocket `Ping` frames every 25s to keep idle tunnels alive behind proxies/CDNs, and preserves TCP half-close semantics via `wsb:eof` control messages. |
 
 ---
 
@@ -66,17 +66,17 @@
   [ SOCKS5 App        ] ─ SOCKS5 :1080┤
                                       │
                               ┌───────▼───────────────┐
-                              │    wsb client (Rust)   │
+                              │  wsb.exe client       │
                               └───────┬───────────────┘
-                                      │  WS Binary Frames (WSS)
+                                      │  WS Binary Frames (ws:// or wss://)
                               ┌───────▼───────────────┐
                               │  Cloudflare Tunnel /   │
-                              │  Web Reverse Proxy     │
+                              │  Reverse Proxy (opt.)  │
                               │  (https://*.trycloudflare.com)
                               └───────┬───────────────┘
                                       │
                               ┌───────▼───────────────┐
-                              │    wsb server (Rust)   │  :8766
+                              │  wsb server           │  :8766
                               └───────┬───────────────┘
                                       │
                                       ├──► MySQL      :3306
@@ -88,116 +88,83 @@
 
 **How it works:**
 
-1. The **client** listens on local ports (TCP/UDP/HTTP/SOCKS5).
-2. When a connection arrives, the client opens a WebSocket to the server and sends a **handshake JSON** containing `token`, `protocol`, and `target`.
-3. The **server** authenticates the token (constant-time), checks the whitelist, connects to the target, and responds with success.
-4. Data is **bridged bidirectionally** via WebSocket binary frames, with Ping keepalive every 25s.
+1. The **client** (`wsb.exe client`) binds local listeners for configured TCP, UDP, HTTP, and/or SOCKS5 rules.
+2. When traffic arrives, the client opens a WebSocket connection (`ws://` or `wss://`) using IPv4-first fallback and sends a JSON **handshake** containing `token`, `protocol` (`tcp`, `udp`, or `http`; SOCKS5 uses `tcp`), and `target`.
+3. The **server** validates the token (constant-time), checks `allowed_targets` (if configured), **connects to the target service first** (10s timeout), and returns a JSON `HandshakeResponse`.
+4. Payload bytes are bridged bidirectionally using WebSocket binary frames, with `Ping` frames every 25s and TCP half-close (`EOF`) propagation.
 
 ---
 
-## 📦 Installation
+## 📦 Getting Started
 
-### Requirements
-- **Rust toolchain** ≥ 1.70 (edition 2021)
+No compiler or external runtime is needed on Windows — just run `wsb.exe` directly from this folder.
 
-### Install Rust
+Verify the binary in PowerShell or Command Prompt:
 
-<details>
-<summary><strong>Linux / Kaggle / Google Colab / Ubuntu</strong></summary>
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source "$HOME/.cargo/env"
+```powershell
+.\wsb.exe --version
+# Output: wsb 0.2.0
 ```
-</details>
-
-<details>
-<summary><strong>Windows</strong></summary>
-
-Download and run `rustup-init.exe` from [https://rustup.rs/](https://rustup.rs/) (select default option `1`).
-</details>
-
-<details>
-<summary><strong>macOS</strong></summary>
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source "$HOME/.cargo/env"
-# or: brew install rust
-```
-</details>
-
-Verify:
-```bash
-cargo --version && rustc --version
-```
-
----
-
-## 🚀 Build
-
-```bash
-cargo build --release
-```
-
-| Platform | Binary |
-|---|---|
-| Linux / macOS | `target/release/wsb` |
-| Windows | `target\release\wsb.exe` |
 
 > [!TIP]
-> Copy to your PATH for global access:
-> ```bash
-> cp target/release/wsb ~/.local/bin/   # or sudo cp ... /usr/local/bin/
-> ```
+> Add this directory to your Windows `PATH` if you want to invoke `wsb` from any terminal location.
+
+> [!NOTE]
+> `wsb.exe` is a Windows executable that supports both `server` and `client` modes. If your remote server runs on Linux (e.g., Kaggle, Google Colab, Ubuntu VPS), deploy the matching Linux `wsb` binary on that host and connect to it from Windows using `wsb.exe client`.
 
 ---
 
 ## 📖 Quick Start
 
-### 1. Server (Kaggle / Remote Host)
+### 1. Server (Remote Host)
 
-**Using config file:**
-```bash
-wsb server -c config.server.toml
+**Using the sample config file ([`config.server.toml`](config.server.toml)):**
+```powershell
+.\wsb.exe server -c config.server.toml
 ```
 
 **Using CLI flags:**
-```bash
-# Auto-generate a 256-bit secure token (recommended):
-wsb server --listen 0.0.0.0:8766
+```powershell
+# Auto-generate a 256-bit secure token on startup (recommended):
+.\wsb.exe server --listen 0.0.0.0:8766
 
-# With a custom static token:
-wsb server --listen 0.0.0.0:8766 --token "my-secret-token"
+# Or specify a static token and target whitelist:
+.\wsb.exe server --listen 0.0.0.0:8766 --token "my-secret-token" --allow 127.0.0.1:3306 --allow 127.0.0.1:80
 
-# Generate a token for your config file:
-wsb gen-token
+# Generate a 256-bit (64-hex) token to paste into config files:
+.\wsb.exe gen-token
 ```
 
-**Expose to the internet via Cloudflare Tunnel:**
+**Optional — Expose the server via Cloudflare Quick Tunnel:**
 ```bash
 cloudflared tunnel --url http://127.0.0.1:8766 --no-autoupdate
 # → https://xxx-xxx-xxx.trycloudflare.com
 ```
+*(Use `wss://xxx-xxx-xxx.trycloudflare.com` as `ws_url` on the client, or `ws://<server-ip>:8766` for direct connections.)*
 
-### 2. Client (Local Machine)
+### 2. Client (Local Windows Machine)
 
-**Using config file:**
-```bash
-wsb client -c config.client.toml
+**Using the sample config file ([`config.client.toml`](config.client.toml)):**
+
+Edit `ws_url` and `token` in `config.client.toml`, then run:
+```powershell
+.\wsb.exe client -c config.client.toml
 ```
 
-**Using CLI flags:**
-```bash
-wsb client \
-  --ws "wss://xxx-xxx-xxx.trycloudflare.com" \
-  --token "my-secret-token" \
-  --tcp 127.0.0.1:13306=127.0.0.1:3306 \
-  --tcp 127.0.0.1:16379=127.0.0.1:6379 \
-  --http 127.0.0.1:18080=127.0.0.1:80 \
-  --udp 127.0.0.1:10053=1.1.1.1:53 \
+**Using CLI flags (PowerShell):**
+```powershell
+.\wsb.exe client `
+  --ws "wss://xxx-xxx-xxx.trycloudflare.com" `
+  --token "my-secret-token" `
+  --tcp 127.0.0.1:13306=127.0.0.1:3306 `
+  --tcp 127.0.0.1:16379=127.0.0.1:6379 `
+  --http 127.0.0.1:18080=127.0.0.1:80 `
+  --udp 127.0.0.1:10053=1.1.1.1:53 `
   --socks5 127.0.0.1:1080
 ```
+
+> [!NOTE]
+> In Command Prompt (`cmd.exe`), put the command on a single line or use `^` instead of `` ` `` for line continuation. You can also combine `-c config.client.toml` with `--ws`, `--token`, `--socks5`, or extra `--tcp`/`--udp`/`--http` flags.
 
 ---
 
@@ -205,72 +172,72 @@ wsb client \
 
 ### MySQL via TCP Tunnel
 
-Open DBeaver, Navicat, or MySQL Workbench:
+Connect with DBeaver, Navicat, MySQL Workbench, or `mysql` CLI:
 - **Host:** `127.0.0.1` &nbsp;|&nbsp; **Port:** `13306`
-- Enter the MySQL credentials from the remote server.
-
-Or test with the included Python script:
-```bash
-python test/test_mysql.py
-```
+- Use the MySQL username and password from the remote server.
 
 ### phpMyAdmin / Web via HTTP Tunnel
 
-```
+Open in your browser:
+```text
 http://127.0.0.1:18080/phpmyadmin/
 ```
 
 > [!NOTE]
-> WSB automatically rewrites the `Host` header to the target address (e.g., `127.0.0.1:80`) so Apache/Nginx correctly resolves the virtual host, preventing redirect errors.
+> `wsb.exe` automatically rewrites the `Host` request header to the remote `target` (e.g., `127.0.0.1:80`) so Apache/Nginx matches the expected virtual host and avoids redirect loops.
 
 ### DNS via UDP Tunnel
 
-```bash
+```powershell
 nslookup google.com 127.0.0.1 -port=10053
 ```
 
 ### SOCKS5 Dynamic Proxy
 
-With just **one port** `127.0.0.1:1080`, access any service on the remote server:
+With a single local port (`127.0.0.1:1080`), forward TCP connections to any remote host and port dynamically:
 
-```bash
-# Web via curl
-curl --socks5-hostname 127.0.0.1:1080 http://127.0.0.1:80/phpmyadmin/
+```powershell
+# HTTP request through SOCKS5 (remote DNS resolution)
+curl.exe --socks5-hostname 127.0.0.1:1080 http://127.0.0.1:80/phpmyadmin/
 
-# SSH via proxy
-ssh -o "ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p" root@127.0.0.1
+# SSH through SOCKS5 (using OpenSSH / ncat / connect)
+ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root@127.0.0.1
 ```
 
-**Browser:** Configure SOCKS5 proxy to `127.0.0.1:1080` (use SwitchyOmega for Chrome or Firefox network settings).
+**Browser:** Configure your SOCKS5 proxy as `127.0.0.1:1080` (e.g., SwitchyOmega or Firefox proxy settings).  
+*(Limitation: the built-in SOCKS5 server supports `CONNECT` with no-authentication only; `BIND` and `UDP ASSOCIATE` are not supported.)*
 
 ---
 
 ## ⚙️ CLI Reference
 
-### `wsb server`
+### `wsb.exe server`
 
 | Flag | Env | Default | Description |
 |---|---|---|---|
-| `-c, --config <PATH>` | — | — | TOML configuration file |
-| `-l, --listen <ADDR>` | `WS_BRIDGE_LISTEN` | `0.0.0.0:8766` | WebSocket listen address |
-| `-t, --token <SECRET>` | `WS_BRIDGE_TOKEN` | `auto` (256-bit) | Client authentication token |
-| `--allow <TARGET>` | — | All | Target whitelist (repeatable) |
+| `-c, --config <CONFIG>` | — | — | Path to server TOML configuration file |
+| `-l, --listen <LISTEN>` | `WS_BRIDGE_LISTEN` | `0.0.0.0:8766` | WebSocket listen address |
+| `-t, --token <TOKEN>` | `WS_BRIDGE_TOKEN` | `auto` | Shared auth token (`auto` / `generate` / empty generates a 256-bit token on startup) |
+| `--allow <ALLOWED>` | — | All targets | Allowed `host:port` target whitelist (repeatable; overrides `allowed_targets` in config) |
 
-### `wsb client`
+### `wsb.exe client`
 
 | Flag | Env | Default | Description |
 |---|---|---|---|
-| `-c, --config <PATH>` | — | — | TOML configuration file |
-| `-w, --ws <URL>` | `WS_BRIDGE_URL` | — | Remote WebSocket URL (`wss://...`) |
-| `-t, --token <SECRET>` | `WS_BRIDGE_TOKEN` | `12345` | Authentication token |
-| `--tcp <LISTEN=TARGET>` | — | — | TCP tunnel (e.g., `127.0.0.1:13306=127.0.0.1:3306`) |
-| `--udp <LISTEN=TARGET>` | — | — | UDP tunnel (e.g., `127.0.0.1:10053=1.1.1.1:53`) |
-| `--http <LISTEN=TARGET>` | — | — | HTTP tunnel with Host rewrite |
-| `--socks5 <LISTEN>` | — | — | SOCKS5 dynamic proxy (e.g., `127.0.0.1:1080`) |
+| `-c, --config <CONFIG>` | — | — | Path to client TOML configuration file |
+| `-w, --ws <WS_URL>` | `WS_BRIDGE_URL` | *Required* | Remote WebSocket server URL (`wss://...` or `ws://...`) |
+| `-t, --token <TOKEN>` | `WS_BRIDGE_TOKEN` | `12345` | Shared secret token matching the server |
+| `--tcp <LISTEN=TARGET>` | — | — | Add a TCP tunnel rule (repeatable, e.g., `127.0.0.1:13306=127.0.0.1:3306`) |
+| `--udp <LISTEN=TARGET>` | — | — | Add a UDP tunnel rule (repeatable, e.g., `127.0.0.1:10053=1.1.1.1:53`) |
+| `--http <LISTEN=TARGET>` | — | — | Add an HTTP tunnel rule with `Host` rewrite (repeatable) |
+| `--socks5 <LISTEN_ADDR>` | — | — | Enable SOCKS5 dynamic proxy (e.g., `127.0.0.1:1080`; overrides config `socks5`) |
 
-### `wsb gen-token`
+> [!TIP]
+> Set `RUST_LOG=debug` (e.g., `$env:RUST_LOG="debug"` in PowerShell) to inspect per-connection tunnel and handshake logs. Default filter is `wsb=info,info`.
 
-Generate a cryptographically secure 256-bit random token (64 hex characters).
+### `wsb.exe gen-token`
+
+Prints a cryptographically secure 256-bit random token (64 lowercase hexadecimal characters) to stdout.
 
 ---
 
@@ -280,18 +247,26 @@ Generate a cryptographically secure 256-bit random token (64 hex characters).
 <summary><strong>config.server.toml</strong></summary>
 
 ```toml
+# ===============================================
+# WS-BRIDGE SERVER CONFIGURATION
+# ===============================================
+
+# Port to listen for incoming WebSocket connections
 listen = "0.0.0.0:8766"
 
-# "auto" = generate a new 256-bit token on each startup
+# Secret token required from clients to authenticate.
+# Set to "auto" (default) to automatically generate a cryptographically secure 256-bit token on startup,
+# or specify your own static secret token.
 token = "auto"
 
-# Target whitelist (uncomment to enable)
+# Optional security whitelist of permitted target addresses.
+# If omitted or commented out, client can connect to any target address.
 # allowed_targets = [
-#     "127.0.0.1:3306",
-#     "127.0.0.1:6379",
-#     "127.0.0.1:80",
-#     "127.0.0.1:22",
-#     "1.1.1.1:53",
+#     "127.0.0.1:3306",  # MySQL
+#     "127.0.0.1:6379",  # Redis
+#     "127.0.0.1:80",    # HTTP / phpMyAdmin
+#     "127.0.0.1:22",    # SSH
+#     "1.1.1.1:53",      # DNS
 # ]
 ```
 </details>
@@ -300,38 +275,51 @@ token = "auto"
 <summary><strong>config.client.toml</strong></summary>
 
 ```toml
+# ===============================================
+# WS-BRIDGE CLIENT CONFIGURATION
+# ===============================================
+
+# Remote WebSocket URL (e.g. Cloudflare tunnel URL or direct domain)
 ws_url = "wss://xxx-xxx-xxx.trycloudflare.com"
+
+# Secret token matching the server config
 token = "<your_token>"
 
-# SOCKS5 Dynamic Proxy (optional)
+# Optional: SOCKS5 Dynamic Proxy
+# Enables transparent tunneling to ANY remote host/port through a single local port!
 socks5 = "127.0.0.1:1080"
 
-# --- Tunnel rules ---
+# --- Static Port Forwarding Rules ---
 
+# 1. MySQL TCP Tunnel
 [[tunnels]]
 name = "mysql"
 protocol = "tcp"
 listen = "127.0.0.1:13306"
 target = "127.0.0.1:3306"
 
+# 2. Redis TCP Tunnel
 [[tunnels]]
 name = "redis"
 protocol = "tcp"
 listen = "127.0.0.1:16379"
 target = "127.0.0.1:6379"
 
+# 3. HTTP Web Server / phpMyAdmin
 [[tunnels]]
 name = "web_phpmyadmin"
 protocol = "http"
 listen = "127.0.0.1:18080"
 target = "127.0.0.1:80"
 
+# 4. SSH TCP Tunnel
 [[tunnels]]
 name = "ssh"
 protocol = "tcp"
 listen = "127.0.0.1:10022"
 target = "127.0.0.1:22"
 
+# 5. DNS UDP Tunnel
 [[tunnels]]
 name = "dns"
 protocol = "udp"
@@ -344,29 +332,14 @@ target = "1.1.1.1:53"
 
 ## 🗂️ Project Structure
 
-```
+```text
 ws_bridge/
-├── Cargo.toml              # Package manifest & dependencies
+├── wsb.exe                 # Pre-built Windows binary (v0.2.0)
 ├── config.server.toml      # Sample server configuration
 ├── config.client.toml      # Sample client configuration
-├── src/
-│   ├── main.rs             # CLI entry point (clap)
-│   ├── config.rs           # TOML config parser & token generation
-│   ├── protocol.rs         # Handshake request/response & TunnelProtocol enum
-│   ├── bridge.rs           # Bidirectional TCP↔WS bridge with Ping keepalive & half-close
-│   ├── server/
-│   │   ├── mod.rs          # WS server listener, auth, dispatch
-│   │   ├── tcp.rs          # Server-side TCP target connector
-│   │   ├── udp.rs          # Server-side UDP target connector
-│   │   └── http.rs         # Server-side HTTP target connector
-│   └── client/
-│       ├── mod.rs          # WS client connector, handshake, tunnel spawner
-│       ├── tcp.rs          # Client TCP listener → WS tunnel
-│       ├── udp.rs          # Client UDP listener → WS tunnel (session tracking)
-│       ├── http.rs         # Client HTTP listener → WS tunnel (Host rewrite)
-│       └── socks5.rs       # Client SOCKS5 proxy → WS tunnel
-└── test/
-    └── test_mysql.py       # MySQL connection test script
+├── README.md               # Documentation (English)
+├── README.vi.md            # Documentation (Tiếng Việt)
+└── README.zh-CN.md         # Documentation (简体中文)
 ```
 
 ---
