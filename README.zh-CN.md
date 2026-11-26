@@ -4,7 +4,7 @@
     <strong>用 Rust 构建的高性能多协议 WebSocket 隧道工具。</strong>
   </p>
   <p align="center">
-    <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20(wsb.exe)-0078D6?logo=windows&logoColor=white">
+    <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%20x86__64-FCC624?logo=linux&logoColor=black">
     <img alt="Tokio" src="https://img.shields.io/badge/async-Tokio-blue?logo=rust">
     <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
     <img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blueviolet">
@@ -16,9 +16,9 @@
 
 ---
 
-**WSB（`wsb.exe` v0.2.0）** 将 **TCP**、**UDP**、**HTTP** 和 **SOCKS5** 数据流封装并通过 **WebSocket**（`ws://` / `wss://`）传输，让您能够通过 Web 隧道（例如 **Cloudflare Quick Tunnel**）安全访问远程主机（如 **Kaggle Notebooks**、Google Colab、Docker 容器、Linux 虚拟机或 Windows 服务器）上的任意内部服务——**无需开放原始 TCP/UDP 端口或固定 IP 地址**。
+**WSB（`wsb` v0.2.0）** 将 **TCP**、**UDP**、**HTTP** 和 **SOCKS5** 数据流封装并通过 **WebSocket**（`ws://` / `wss://`）传输，让您能够通过 Web 隧道（例如 **Cloudflare Quick Tunnel**）安全访问远程主机（如 **Kaggle Notebooks**、Google Colab、Docker 容器或 Linux VPS/虚拟机）上的任意内部服务——**无需开放原始 TCP/UDP 端口或固定 IP 地址**。
 
-当前项目目录包含开箱即用的 Windows 可执行文件 [`wsb.exe`](wsb.exe) 以及服务端和客户端示例 TOML 配置文件。
+当前项目目录包含预编译的 **Linux x86_64** 可执行文件 [`wsb.txt`](wsb.txt)（保存为 `.txt` 扩展名以便上传下载传输）以及服务端和客户端示例 TOML 配置文件。
 
 ## 目录
 
@@ -26,8 +26,8 @@
 - [架构设计与数据流](#-架构设计与数据流)
 - [准备工作](#-准备工作)
 - [快速开始](#-快速开始)
-  - [1. 服务端（远程主机）](#1-服务端远程主机)
-  - [2. 客户端（本地 Windows 机器）](#2-客户端本地-windows-机器)
+  - [1. 服务端（Kaggle / 远程 Linux 主机）](#1-服务端kaggle--远程-linux-主机)
+  - [2. 客户端（本地 Linux 机器）](#2-客户端本地-linux-机器)
 - [使用示例](#-使用示例)
 - [CLI 参考](#%EF%B8%8F-cli-参考)
 - [TOML 配置](#-toml-配置)
@@ -40,7 +40,7 @@
 
 | 特性 | 描述 |
 |---|---|
-| ⚡ **开箱即用** | 提供独立的 Windows 可执行文件（`wsb.exe` v0.2.0），基于 Rust + Tokio（`tokio-tungstenite`）构建——低延迟、低内存占用、无需安装运行时依赖。 |
+| ⚡ **预编译 Linux 二进制** | 提供独立的 Linux `x86_64` ELF 可执行文件（`wsb.txt` → `wsb` v0.2.0），基于 Rust + Tokio（`tokio-tungstenite`）构建——低延迟、低内存占用、无需安装 Rust 工具链。 |
 | 🔌 **TCP 隧道** | 转发任意 TCP 服务：MySQL、PostgreSQL、Redis、SSH、MongoDB、Kafka 等。 |
 | 📡 **UDP 隧道** | 传输 UDP 数据报（单包最大 64 KB，如 DNS、Syslog、游戏服务器），支持按来源地址自动会话跟踪（100 个数据包缓冲队列）及 60 秒空闲超时。 |
 | 🌐 **HTTP 隧道** | 访问远程 Web 应用（phpMyAdmin、REST API、管理后台），**自动重写 `Host` 请求头**为目标地址，支持 HTTP/1.1 Keep-Alive、`Content-Length`、`Transfer-Encoding: chunked` 以及 `Upgrade`/WebSocket 透传。 |
@@ -48,7 +48,7 @@
 | 🔒 **安全性** | 握手阶段使用恒定时间比较校验 Token，支持启动时自动生成 256 位（64 位十六进制）安全 Token 或自定义静态 Token，服务端支持 `allowed_targets` 白名单。 |
 | ⚙️ **灵活配置** | 支持 TOML 配置文件（`config.server.toml`、`config.client.toml`）、CLI 参数与环境变量（`WS_BRIDGE_LISTEN`、`WS_BRIDGE_URL`、`WS_BRIDGE_TOKEN`、`RUST_LOG`）自由组合。 |
 | ☁️ **Cloudflare Tunnel 兼容** | 与 `cloudflared tunnel --url http://127.0.0.1:8766` 无缝配合。 |
-| 🔐 **TLS 与网络容错** | Windows 构建使用 `native-tls`（Linux/macOS 构建使用 `rustls`）。客户端 DNS 解析后**优先尝试 IPv4 再回退 IPv6**（每个地址超时 10 秒），并启用 `TCP_NODELAY`。 |
+| 🔐 **TLS 与网络容错** | Linux/macOS 构建使用 `rustls`（WebPKI 根证书），运行时不依赖外部 OpenSSL。客户端 DNS 解析后**优先尝试 IPv4 再回退 IPv6**（每个地址超时 10 秒），并启用 `TCP_NODELAY`。 |
 | 🫀 **心跳保活与半关闭** | 每 25 秒发送一次 WebSocket `Ping` 帧防止代理/CDN 断连，并通过 `wsb:eof` 控制消息端到端保留 TCP 半关闭语义。 |
 
 ---
@@ -56,8 +56,8 @@
 ## 📐 架构设计与数据流
 
 ```text
-  本地机器（客户端）                               远程主机（服务端）
-  ================                               ================
+  本地机器（客户端）                               远程 Linux 主机（服务端）
+  ================                               ========================
 
   [ MySQL / DBeaver   ] ─ TCP :13306 ─┐
   [ Redis CLI         ] ─ TCP :16379 ─┤
@@ -66,7 +66,7 @@
   [ SOCKS5 应用       ] ─ SOCKS5 :1080┤
                                       │
                               ┌───────▼───────────────┐
-                              │  wsb.exe client       │
+                              │     wsb client        │
                               └───────┬───────────────┘
                                       │  WS 二进制帧 (ws:// 或 wss://)
                               ┌───────▼───────────────┐
@@ -76,7 +76,7 @@
                               └───────┬───────────────┘
                                       │
                               ┌───────▼───────────────┐
-                              │  wsb server           │  :8766
+                              │     wsb server        │  :8766
                               └───────┬───────────────┘
                                       │
                                       ├──► MySQL      :3306
@@ -88,51 +88,61 @@
 
 **工作流程：**
 
-1. **客户端**（`wsb.exe client`）按配置监听本地 TCP、UDP、HTTP 和/或 SOCKS5 端口。
+1. **客户端**（`wsb client`）按配置监听本地 TCP、UDP、HTTP 和/或 SOCKS5 端口。
 2. 当有连接到达时，客户端以 IPv4 优先回退方式建立 WebSocket 连接（`ws://` 或 `wss://`），发送包含 `token`、`protocol`（`tcp`、`udp` 或 `http`；SOCKS5 使用 `tcp`）和 `target` 的 **JSON 握手请求**。
-3. **服务端**校验 Token（恒定时间比较）、检查 `allowed_targets` 白名单（如已配置）、**先连接目标服务**（超时 10 秒），再返回 `HandshakeResponse` JSON。
+3. **服务端**（`wsb server`）校验 Token（恒定时间比较）、检查 `allowed_targets` 白名单（如已配置）、**先连接目标服务**（超时 10 秒），再返回 `HandshakeResponse` JSON。
 4. 数据通过 WebSocket 二进制帧双向转发，每 25 秒发送 Ping 心跳保活，并同步 TCP 半关闭状态。
 
 ---
 
 ## 📦 准备工作
 
-在 Windows 上无需安装编译器或额外运行时，直接运行当前目录下的 `wsb.exe` 即可。
+在 Linux `x86_64` 上无需安装编译器或 Rust 工具链。将 [`wsb.txt`](wsb.txt) 重命名为 `wsb` 并赋予可执行权限：
 
-在 PowerShell 或命令提示符中验证：
+```bash
+mv wsb.txt wsb
+chmod +x wsb
+```
 
-```powershell
-.\wsb.exe --version
+*（如果您希望在仓库目录中保留 `wsb.txt`，可使用 `cp wsb.txt wsb && chmod +x wsb`。）*
+
+验证程序：
+
+```bash
+./wsb --version
 # 输出: wsb 0.2.0
 ```
 
 > [!TIP]
-> 如需在任意目录下直接使用 `wsb.exe`，可将当前文件夹路径添加到 Windows 系统环境变量 `PATH` 中。
+> 复制到 `PATH` 目录以便在任意位置运行：
+> ```bash
+> cp wsb ~/.local/bin/   # 或: sudo cp wsb /usr/local/bin/
+> ```
 
 > [!NOTE]
-> `wsb.exe` 为 Windows 可执行程序，同时支持 `server` 与 `client` 模式。如果远程服务器为 Linux（如 Kaggle、Google Colab、Ubuntu VPS），请在服务端运行对应的 Linux `wsb` 二进制文件，并在本地 Windows 上运行 `wsb.exe client` 进行连接。
+> Linux 版 `wsb` 同时支持 `server` 与 `client` 模式。如果本地电脑为 Windows，可在本地使用 Windows 版 `wsb.exe` 作为客户端，并在远程 Linux 主机（如 Kaggle、Google Colab、Ubuntu VPS）上运行 `./wsb server`。
 
 ---
 
 ## 📖 快速开始
 
-### 1. 服务端（远程主机）
+### 1. 服务端（Kaggle / 远程 Linux 主机）
 
 **使用示例配置文件（[`config.server.toml`](config.server.toml)）：**
-```powershell
-.\wsb.exe server -c config.server.toml
+```bash
+./wsb server -c config.server.toml
 ```
 
 **使用 CLI 参数：**
-```powershell
+```bash
 # 启动时自动生成 256 位随机安全 Token（推荐）：
-.\wsb.exe server --listen 0.0.0.0:8766
+./wsb server --listen 0.0.0.0:8766
 
 # 或指定固定 Token 与目标白名单：
-.\wsb.exe server --listen 0.0.0.0:8766 --token "my-secret-token" --allow 127.0.0.1:3306 --allow 127.0.0.1:80
+./wsb server --listen 0.0.0.0:8766 --token "my-secret-token" --allow 127.0.0.1:3306 --allow 127.0.0.1:80
 
 # 生成一个 256 位（64 位十六进制）Token 用于写入配置文件：
-.\wsb.exe gen-token
+./wsb gen-token
 ```
 
 **可选 — 通过 Cloudflare Quick Tunnel 暴露服务：**
@@ -142,29 +152,29 @@ cloudflared tunnel --url http://127.0.0.1:8766 --no-autoupdate
 ```
 *（客户端将 `ws_url` 设为 `wss://xxx-xxx-xxx.trycloudflare.com`，直连时可使用 `ws://<服务器IP>:8766`。）*
 
-### 2. 客户端（本地 Windows 机器）
+### 2. 客户端（本地 Linux 机器）
 
 **使用示例配置文件（[`config.client.toml`](config.client.toml)）：**
 
 修改 `config.client.toml` 中的 `ws_url` 和 `token`，然后运行：
-```powershell
-.\wsb.exe client -c config.client.toml
+```bash
+./wsb client -c config.client.toml
 ```
 
-**使用 CLI 参数（PowerShell）：**
-```powershell
-.\wsb.exe client `
-  --ws "wss://xxx-xxx-xxx.trycloudflare.com" `
-  --token "my-secret-token" `
-  --tcp 127.0.0.1:13306=127.0.0.1:3306 `
-  --tcp 127.0.0.1:16379=127.0.0.1:6379 `
-  --http 127.0.0.1:18080=127.0.0.1:80 `
-  --udp 127.0.0.1:10053=1.1.1.1:53 `
+**使用 CLI 参数：**
+```bash
+./wsb client \
+  --ws "wss://xxx-xxx-xxx.trycloudflare.com" \
+  --token "my-secret-token" \
+  --tcp 127.0.0.1:13306=127.0.0.1:3306 \
+  --tcp 127.0.0.1:16379=127.0.0.1:6379 \
+  --http 127.0.0.1:18080=127.0.0.1:80 \
+  --udp 127.0.0.1:10053=1.1.1.1:53 \
   --socks5 127.0.0.1:1080
 ```
 
-> [!NOTE]
-> 在命令提示符（`cmd.exe`）中请写为单行，或使用 `^` 替代 `` ` `` 进行换行。您也可以将 `-c config.client.toml` 与 `--ws`、`--token`、`--socks5` 或额外的 `--tcp`/`--udp`/`--http` 参数配合使用。
+> [!TIP]
+> 您也可以将 `-c config.client.toml` 与 `--ws`、`--token`、`--socks5` 或额外的 `--tcp` / `--udp` / `--http` 参数组合使用。
 
 ---
 
@@ -173,8 +183,10 @@ cloudflared tunnel --url http://127.0.0.1:8766 --no-autoupdate
 ### 通过 TCP 隧道连接 MySQL
 
 使用 DBeaver、Navicat、MySQL Workbench 或 `mysql` 命令行客户端连接：
+```bash
+mysql -h 127.0.0.1 -P 13306 -u <your_user> -p
+```
 - **主机：** `127.0.0.1` &nbsp;|&nbsp; **端口：** `13306`
-- 输入远程服务器上的 MySQL 用户名与密码。
 
 ### 通过 HTTP 隧道访问 phpMyAdmin / Web
 
@@ -184,24 +196,25 @@ http://127.0.0.1:18080/phpmyadmin/
 ```
 
 > [!NOTE]
-> `wsb.exe` 会自动将请求的 `Host` 请求头重写为目标地址（例如 `127.0.0.1:80`），使 Apache/Nginx 正确匹配虚拟主机并避免重定向错误。
+> `wsb` 会自动将请求的 `Host` 请求头重写为目标地址（例如 `127.0.0.1:80`），使 Apache/Nginx 正确匹配虚拟主机并避免重定向错误。
 
 ### 通过 UDP 隧道进行 DNS 查询
 
-```powershell
-nslookup google.com 127.0.0.1 -port=10053
+```bash
+dig @127.0.0.1 -p 10053 google.com
+# 或: nslookup -port=10053 google.com 127.0.0.1
 ```
 
 ### SOCKS5 动态代理
 
 仅需**一个本地端口** `127.0.0.1:1080`，即可动态转发 TCP 流量至远程服务器上的任意主机和端口：
 
-```powershell
+```bash
 # 通过 curl 经 SOCKS5 访问 Web（远程 DNS 解析）
-curl.exe --socks5-hostname 127.0.0.1:1080 http://127.0.0.1:80/phpmyadmin/
+curl --socks5-hostname 127.0.0.1:1080 http://127.0.0.1:80/phpmyadmin/
 
-# 通过 SOCKS5 代理 SSH（使用 ncat / connect）
-ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root@127.0.0.1
+# 通过 SOCKS5 代理 SSH
+ssh -o "ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p" root@127.0.0.1
 ```
 
 **浏览器：** 将 SOCKS5 代理配置为 `127.0.0.1:1080`（Chrome 使用 SwitchyOmega，或使用 Firefox 网络设置）。  
@@ -211,7 +224,7 @@ ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root
 
 ## ⚙️ CLI 参考
 
-### `wsb.exe server`
+### `wsb server`
 
 | 参数 | 环境变量 | 默认值 | 描述 |
 |---|---|---|---|
@@ -220,7 +233,7 @@ ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root
 | `-t, --token <TOKEN>` | `WS_BRIDGE_TOKEN` | `auto` | 客户端认证 Token（`auto` / `generate` / 空值将在启动时自动生成 256 位 Token） |
 | `--allow <ALLOWED>` | — | 全部目标 | 允许连接的 `host:port` 白名单（可多次指定；会覆盖配置中的 `allowed_targets`） |
 
-### `wsb.exe client`
+### `wsb client`
 
 | 参数 | 环境变量 | 默认值 | 描述 |
 |---|---|---|---|
@@ -233,9 +246,9 @@ ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root
 | `--socks5 <LISTEN_ADDR>` | — | — | 启用 SOCKS5 动态代理（例：`127.0.0.1:1080`；会覆盖配置中的 `socks5`） |
 
 > [!TIP]
-> 设置环境变量 `RUST_LOG=debug`（在 PowerShell 中执行 `$env:RUST_LOG="debug"`）可查看每条连接的隧道与握手详细日志，默认级别为 `wsb=info,info`。
+> 使用 `RUST_LOG=debug ./wsb ...` 运行可查看每条连接的隧道与握手详细日志，默认级别为 `wsb=info,info`。
 
-### `wsb.exe gen-token`
+### `wsb gen-token`
 
 向标准输出打印一个加密安全的 256 位随机 Token（64 位小写十六进制字符）。
 
@@ -334,7 +347,7 @@ target = "1.1.1.1:53"
 
 ```text
 ws_bridge/
-├── wsb.exe                 # 预编译的 Windows 可执行文件 (v0.2.0)
+├── wsb.txt                 # 预编译 Linux x86_64 二进制文件 (v0.2.0；重命名为 wsb 并 chmod +x)
 ├── config.server.toml      # 服务端配置示例
 ├── config.client.toml      # 客户端配置示例
 ├── README.md               # 说明文档（English）

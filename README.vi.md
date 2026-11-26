@@ -4,7 +4,7 @@
     <strong>Công cụ tạo đường hầm đa giao thức qua WebSocket, hiệu năng cao, viết bằng Rust.</strong>
   </p>
   <p align="center">
-    <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20(wsb.exe)-0078D6?logo=windows&logoColor=white">
+    <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%20x86__64-FCC624?logo=linux&logoColor=black">
     <img alt="Tokio" src="https://img.shields.io/badge/async-Tokio-blue?logo=rust">
     <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
     <img alt="Version" src="https://img.shields.io/badge/version-0.2.0-blueviolet">
@@ -16,9 +16,9 @@
 
 ---
 
-**WSB (`wsb.exe` v0.2.0)** đóng gói và truyền tải toàn bộ lưu lượng **TCP**, **UDP**, **HTTP** và **SOCKS5** thông qua **WebSocket** (`ws://` / `wss://`), giúp truy cập an toàn tới bất kỳ dịch vụ nội bộ nào trên máy chủ từ xa (như **Kaggle Notebooks**, Google Colab, Docker container, Linux VM hoặc Windows server) qua các web tunnel như **Cloudflare Quick Tunnel** — **không cần mở cổng TCP/UDP thô hay có IP tĩnh**.
+**WSB (`wsb` v0.2.0)** đóng gói và truyền tải toàn bộ lưu lượng **TCP**, **UDP**, **HTTP** và **SOCKS5** thông qua **WebSocket** (`ws://` / `wss://`), giúp truy cập an toàn tới bất kỳ dịch vụ nội bộ nào trên máy chủ từ xa (như **Kaggle Notebooks**, Google Colab, Docker container hoặc Linux VPS/VM) qua các web tunnel như **Cloudflare Quick Tunnel** — **không cần mở cổng TCP/UDP thô hay có IP tĩnh**.
 
-Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.exe`](wsb.exe) kèm theo các file cấu hình mẫu TOML cho server và client.
+Thư mục dự án hiện cung cấp sẵn bản dựng **Linux x86_64** [`wsb.txt`](wsb.txt) (được lưu dưới đuôi `.txt` để thuận tiện truyền/tải file) kèm theo các file cấu hình mẫu TOML cho server và client.
 
 ## Mục lục
 
@@ -26,8 +26,8 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
 - [Kiến trúc & Luồng dữ liệu](#-kiến-trúc--luồng-dữ-liệu)
 - [Chuẩn bị](#-chuẩn-bị)
 - [Khởi chạy nhanh](#-khởi-chạy-nhanh)
-  - [1. Server (Máy chủ từ xa)](#1-server-máy-chủ-từ-xa)
-  - [2. Client (Máy Windows cục bộ)](#2-client-máy-windows-cục-bộ)
+  - [1. Server (Kaggle / Máy chủ Linux từ xa)](#1-server-kaggle--máy-chủ-linux-từ-xa)
+  - [2. Client (Máy Linux cục bộ)](#2-client-máy-linux-cục-bộ)
 - [Ví dụ sử dụng](#-ví-dụ-sử-dụng)
 - [CLI Reference](#%EF%B8%8F-cli-reference)
 - [Cấu hình TOML](#-cấu-hình-toml)
@@ -40,7 +40,7 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
 
 | Tính năng | Mô tả |
 |---|---|
-| ⚡ **Chạy trực tiếp (`wsb.exe`)** | Bản dựng độc lập cho Windows (`wsb.exe` v0.2.0) viết bằng Rust + Tokio (`tokio-tungstenite`) — độ trễ thấp, tốn ít RAM, không cần cài Rust hay thư viện phụ thuộc. |
+| ⚡ **Bản dựng Linux dựng sẵn** | Cung cấp sẵn file thực thi độc lập cho Linux `x86_64` (`wsb.txt` → `wsb` v0.2.0) viết bằng Rust + Tokio (`tokio-tungstenite`) — độ trễ thấp, ít RAM, không cần cài Rust toolchain. |
 | 🔌 **TCP Tunnel** | Chuyển tiếp mọi dịch vụ TCP: MySQL, PostgreSQL, Redis, SSH, MongoDB, Kafka, v.v. |
 | 📡 **UDP Tunnel** | Truyền tải datagram UDP (tối đa 64 KB/gói, vd: DNS, Syslog, game server) với session tracking theo từng peer (hàng đợi 100 gói) và idle timeout 60 giây. |
 | 🌐 **HTTP Tunnel** | Truy cập ứng dụng web (phpMyAdmin, REST API, dashboard) với **tự động viết lại `Host` header** sang địa chỉ đích, hỗ trợ HTTP/1.1 Keep-Alive, `Content-Length`, `Transfer-Encoding: chunked` và passthrough cho `Upgrade`/WebSocket. |
@@ -48,7 +48,7 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
 | 🔒 **Bảo mật** | So khớp token theo thời gian hằng (constant-time) khi handshake, tự sinh token ngẫu nhiên 256-bit (64 ký tự hex) hoặc dùng token tĩnh, kèm whitelist `allowed_targets` phía server. |
 | ⚙️ **Cấu hình linh hoạt** | Kết hợp file TOML (`config.server.toml`, `config.client.toml`), cờ CLI và biến môi trường (`WS_BRIDGE_LISTEN`, `WS_BRIDGE_URL`, `WS_BRIDGE_TOKEN`, `RUST_LOG`). |
 | ☁️ **Tương thích Cloudflare Tunnel** | Hoạt động mượt mà với `cloudflared tunnel --url http://127.0.0.1:8766`. |
-| 🔐 **TLS & Ưu tiên IPv4** | Bản Windows dùng `native-tls` (bản Linux/macOS dùng `rustls`). Client phân giải DNS và thử **IPv4 trước IPv6** (timeout 10 giây mỗi địa chỉ), bật `TCP_NODELAY`. |
+| 🔐 **TLS & Ưu tiên IPv4** | Bản Linux dùng `rustls` (WebPKI roots), không phụ thuộc OpenSSL runtime bên ngoài. Client phân giải DNS và thử **IPv4 trước IPv6** (timeout 10 giây mỗi địa chỉ), bật `TCP_NODELAY`. |
 | 🫀 **Keepalive & Half-Close** | Gửi WebSocket `Ping` mỗi 25 giây để giữ kết nối sống qua proxy/CDN, đồng thời bảo toàn ngữ nghĩa TCP half-close qua thông điệp điều khiển `wsb:eof`. |
 
 ---
@@ -56,8 +56,8 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
 ## 📐 Kiến trúc & Luồng dữ liệu
 
 ```text
-  Máy cục bộ (Client)                              Máy chủ từ xa (Server)
-  ===================                              ======================
+  Máy cục bộ (Client)                              Máy chủ Linux từ xa (Server)
+  ===================                              ============================
 
   [ MySQL / DBeaver   ] ─ TCP :13306 ─┐
   [ Redis CLI         ] ─ TCP :16379 ─┤
@@ -66,7 +66,7 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
   [ Ứng dụng SOCKS5   ] ─ SOCKS5 :1080┤
                                       │
                               ┌───────▼───────────────┐
-                              │  wsb.exe client       │
+                              │     wsb client        │
                               └───────┬───────────────┘
                                       │  WS Binary Frames (ws:// hoặc wss://)
                               ┌───────▼───────────────┐
@@ -76,7 +76,7 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
                               └───────┬───────────────┘
                                       │
                               ┌───────▼───────────────┐
-                              │  wsb server           │  :8766
+                              │     wsb server        │  :8766
                               └───────┬───────────────┘
                                       │
                                       ├──► MySQL      :3306
@@ -88,51 +88,61 @@ Thư mục dự án hiện cung cấp sẵn file thực thi cho Windows [`wsb.ex
 
 **Luồng hoạt động:**
 
-1. **Client** (`wsb.exe client`) lắng nghe trên các cổng cục bộ theo cấu hình TCP, UDP, HTTP và/hoặc SOCKS5.
+1. **Client** (`wsb client`) lắng nghe trên các cổng cục bộ theo cấu hình TCP, UDP, HTTP và/hoặc SOCKS5.
 2. Khi có kết nối đến, client mở một kết nối WebSocket (`ws://` hoặc `wss://`) theo cơ chế ưu tiên IPv4 và gửi **handshake JSON** gồm `token`, `protocol` (`tcp`, `udp`, hoặc `http`; SOCKS5 dùng `tcp`) và `target`.
-3. **Server** xác thực token (constant-time), kiểm tra `allowed_targets` (nếu có), **kết nối tới dịch vụ đích trước** (timeout 10 giây) rồi mới trả về `HandshakeResponse` JSON.
+3. **Server** (`wsb server`) xác thực token (constant-time), kiểm tra `allowed_targets` (nếu có), **kết nối tới dịch vụ đích trước** (timeout 10 giây) rồi mới trả về `HandshakeResponse` JSON.
 4. Dữ liệu được truyền hai chiều qua các binary frame của WebSocket, kèm `Ping` mỗi 25 giây và đồng bộ trạng thái đóng một chiều (`EOF`) cho TCP.
 
 ---
 
 ## 📦 Chuẩn bị
 
-Trên Windows không cần cài đặt trình biên dịch hay runtime phụ — chạy trực tiếp `wsb.exe` trong thư mục dự án.
+Trên Linux `x86_64` không cần cài Rust hay trình biên dịch. Đổi tên [`wsb.txt`](wsb.txt) thành `wsb` và cấp quyền thực thi:
 
-Kiểm tra nhanh bằng PowerShell hoặc Command Prompt:
+```bash
+mv wsb.txt wsb
+chmod +x wsb
+```
 
-```powershell
-.\wsb.exe --version
+*(Hoặc dùng `cp wsb.txt wsb && chmod +x wsb` nếu bạn muốn giữ nguyên file `wsb.txt` trong thư mục.)*
+
+Kiểm tra nhanh:
+
+```bash
+./wsb --version
 # Kết quả: wsb 0.2.0
 ```
 
 > [!TIP]
-> Bạn có thể thêm đường dẫn thư mục chứa `wsb.exe` vào biến môi trường `PATH` của Windows để gọi `wsb.exe` từ bất kỳ đâu.
+> Copy vào `PATH` để gọi `wsb` từ bất kỳ đâu:
+> ```bash
+> cp wsb ~/.local/bin/   # hoặc: sudo cp wsb /usr/local/bin/
+> ```
 
 > [!NOTE]
-> `wsb.exe` là file thực thi cho Windows và hỗ trợ cả chế độ `server` lẫn `client`. Nếu máy chủ từ xa chạy Linux (như Kaggle, Google Colab, VPS Ubuntu), hãy chạy bản binary `wsb` tương ứng cho Linux trên máy chủ đó, rồi dùng `wsb.exe client` trên Windows để kết nối tới.
+> File nhị phân Linux `wsb` hỗ trợ cả hai chế độ `server` và `client`. Nếu máy tính cá nhân của bạn dùng Windows, hãy dùng bản phát hành `wsb.exe` trên Windows làm client để kết nối tới `./wsb server` đang chạy trên máy chủ Linux (như Kaggle, Google Colab, Ubuntu VPS).
 
 ---
 
 ## 📖 Khởi chạy nhanh
 
-### 1. Server (Máy chủ từ xa)
+### 1. Server (Kaggle / Máy chủ Linux từ xa)
 
 **Dùng file cấu hình mẫu ([`config.server.toml`](config.server.toml)):**
-```powershell
-.\wsb.exe server -c config.server.toml
+```bash
+./wsb server -c config.server.toml
 ```
 
 **Dùng cờ CLI:**
-```powershell
+```bash
 # Tự sinh token ngẫu nhiên 256-bit mỗi lần khởi chạy (khuyên dùng):
-.\wsb.exe server --listen 0.0.0.0:8766
+./wsb server --listen 0.0.0.0:8766
 
 # Hoặc chỉ định token cố định và whitelist target:
-.\wsb.exe server --listen 0.0.0.0:8766 --token "my-secret-token" --allow 127.0.0.1:3306 --allow 127.0.0.1:80
+./wsb server --listen 0.0.0.0:8766 --token "my-secret-token" --allow 127.0.0.1:3306 --allow 127.0.0.1:80
 
 # Sinh sẵn token 256-bit (64 ký tự hex) để dán vào file cấu hình:
-.\wsb.exe gen-token
+./wsb gen-token
 ```
 
 **Tùy chọn — Public server qua Cloudflare Quick Tunnel:**
@@ -142,29 +152,29 @@ cloudflared tunnel --url http://127.0.0.1:8766 --no-autoupdate
 ```
 *(Điền `wss://xxx-xxx-xxx.trycloudflare.com` vào `ws_url` ở client, hoặc dùng `ws://<ip-server>:8766` nếu kết nối trực tiếp.)*
 
-### 2. Client (Máy Windows cục bộ)
+### 2. Client (Máy Linux cục bộ)
 
 **Dùng file cấu hình mẫu ([`config.client.toml`](config.client.toml)):**
 
 Sửa `ws_url` và `token` trong `config.client.toml`, sau đó chạy:
-```powershell
-.\wsb.exe client -c config.client.toml
+```bash
+./wsb client -c config.client.toml
 ```
 
-**Dùng cờ CLI (PowerShell):**
-```powershell
-.\wsb.exe client `
-  --ws "wss://xxx-xxx-xxx.trycloudflare.com" `
-  --token "my-secret-token" `
-  --tcp 127.0.0.1:13306=127.0.0.1:3306 `
-  --tcp 127.0.0.1:16379=127.0.0.1:6379 `
-  --http 127.0.0.1:18080=127.0.0.1:80 `
-  --udp 127.0.0.1:10053=1.1.1.1:53 `
+**Dùng cờ CLI:**
+```bash
+./wsb client \
+  --ws "wss://xxx-xxx-xxx.trycloudflare.com" \
+  --token "my-secret-token" \
+  --tcp 127.0.0.1:13306=127.0.0.1:3306 \
+  --tcp 127.0.0.1:16379=127.0.0.1:6379 \
+  --http 127.0.0.1:18080=127.0.0.1:80 \
+  --udp 127.0.0.1:10053=1.1.1.1:53 \
   --socks5 127.0.0.1:1080
 ```
 
-> [!NOTE]
-> Nếu dùng Command Prompt (`cmd.exe`), hãy viết trên một dòng hoặc dùng `^` thay cho `` ` `` để xuống dòng. Bạn cũng có thể kết hợp `-c config.client.toml` với `--ws`, `--token`, `--socks5` hoặc bổ sung thêm `--tcp`/`--udp`/`--http`.
+> [!TIP]
+> Bạn có thể kết hợp `-c config.client.toml` với `--ws`, `--token`, `--socks5` hoặc bổ sung thêm các cờ `--tcp` / `--udp` / `--http`.
 
 ---
 
@@ -172,9 +182,11 @@ Sửa `ws_url` và `token` trong `config.client.toml`, sau đó chạy:
 
 ### MySQL qua TCP Tunnel
 
-Mở DBeaver, Navicat, MySQL Workbench hoặc `mysql` CLI:
+Kết nối bằng DBeaver, Navicat, MySQL Workbench hoặc `mysql` CLI:
+```bash
+mysql -h 127.0.0.1 -P 13306 -u <your_user> -p
+```
 - **Host:** `127.0.0.1` &nbsp;|&nbsp; **Port:** `13306`
-- Nhập tài khoản MySQL trên máy chủ từ xa.
 
 ### phpMyAdmin / Web qua HTTP Tunnel
 
@@ -184,24 +196,25 @@ http://127.0.0.1:18080/phpmyadmin/
 ```
 
 > [!NOTE]
-> `wsb.exe` tự động viết lại header `Host` thành địa chỉ `target` từ xa (ví dụ `127.0.0.1:80`) để Apache/Nginx nhận diện đúng virtual host và tránh lỗi redirect.
+> `wsb` tự động viết lại header `Host` thành địa chỉ `target` từ xa (ví dụ `127.0.0.1:80`) để Apache/Nginx nhận diện đúng virtual host và tránh lỗi redirect.
 
 ### DNS qua UDP Tunnel
 
-```powershell
-nslookup google.com 127.0.0.1 -port=10053
+```bash
+dig @127.0.0.1 -p 10053 google.com
+# hoặc: nslookup -port=10053 google.com 127.0.0.1
 ```
 
 ### SOCKS5 Dynamic Proxy
 
 Chỉ cần **1 cổng** `127.0.0.1:1080` để chuyển tiếp kết nối TCP tới bất kỳ địa chỉ và cổng nào trên máy chủ từ xa:
 
-```powershell
+```bash
 # Gọi HTTP qua SOCKS5 (phân giải DNS ở phía remote)
-curl.exe --socks5-hostname 127.0.0.1:1080 http://127.0.0.1:80/phpmyadmin/
+curl --socks5-hostname 127.0.0.1:1080 http://127.0.0.1:80/phpmyadmin/
 
-# SSH qua SOCKS5 (dùng ncat / connect)
-ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root@127.0.0.1
+# SSH qua SOCKS5
+ssh -o "ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p" root@127.0.0.1
 ```
 
 **Trình duyệt:** Cấu hình SOCKS5 proxy là `127.0.0.1:1080` (dùng SwitchyOmega trên Chrome hoặc cài đặt mạng trong Firefox).  
@@ -211,7 +224,7 @@ ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root
 
 ## ⚙️ CLI Reference
 
-### `wsb.exe server`
+### `wsb server`
 
 | Cờ | Biến môi trường | Mặc định | Mô tả |
 |---|---|---|---|
@@ -220,7 +233,7 @@ ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root
 | `-t, --token <TOKEN>` | `WS_BRIDGE_TOKEN` | `auto` | Token xác thực client (`auto` / `generate` / rỗng sẽ tự sinh token 256-bit khi khởi chạy) |
 | `--allow <ALLOWED>` | — | Tất cả | Whitelist `host:port` được phép kết nối (có thể lặp lại; ghi đè `allowed_targets` trong config) |
 
-### `wsb.exe client`
+### `wsb client`
 
 | Cờ | Biến môi trường | Mặc định | Mô tả |
 |---|---|---|---|
@@ -233,9 +246,9 @@ ssh -o "ProxyCommand=ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p" root
 | `--socks5 <LISTEN_ADDR>` | — | — | Bật SOCKS5 dynamic proxy (vd: `127.0.0.1:1080`; ghi đè `socks5` trong config) |
 
 > [!TIP]
-> Đặt biến môi trường `RUST_LOG=debug` (vd: `$env:RUST_LOG="debug"` trong PowerShell) để xem log chi tiết từng kết nối và handshake. Mặc định là `wsb=info,info`.
+> Chạy với `RUST_LOG=debug ./wsb ...` để xem log chi tiết từng kết nối và handshake. Mặc định là `wsb=info,info`.
 
-### `wsb.exe gen-token`
+### `wsb gen-token`
 
 In ra stdout một token ngẫu nhiên 256-bit an toàn mật mã (64 ký tự hex viết thường).
 
@@ -334,7 +347,7 @@ target = "1.1.1.1:53"
 
 ```text
 ws_bridge/
-├── wsb.exe                 # File thực thi Windows dựng sẵn (v0.2.0)
+├── wsb.txt                 # Bản dựng Linux x86_64 dựng sẵn (v0.2.0; đổi tên thành wsb & chmod +x)
 ├── config.server.toml      # Cấu hình mẫu cho server
 ├── config.client.toml      # Cấu hình mẫu cho client
 ├── README.md               # Tài liệu hướng dẫn (English)
