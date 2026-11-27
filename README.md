@@ -100,7 +100,7 @@ This package includes the pre-built **Linux x86_64** executable [`wsb`](wsb) alo
 No compiler or Rust toolchain is needed on Linux `x86_64`. Grant execute permission to [`wsb`](wsb):
 
 ```bash
-chmod +x wsb
+chmod 755 ./wsb
 ```
 
 Verify the binary:

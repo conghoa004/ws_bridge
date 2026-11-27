@@ -100,7 +100,7 @@
 在 Linux `x86_64` 上无需安装编译器或 Rust 工具链。为 [`wsb`](wsb) 赋予可执行权限即可使用：
 
 ```bash
-chmod +x wsb
+chmod 755 ./wsb
 ```
 
 验证程序：
