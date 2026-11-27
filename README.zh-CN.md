@@ -18,7 +18,7 @@
 
 **WSB（`wsb` v0.2.0）** 将 **TCP**、**UDP**、**HTTP** 和 **SOCKS5** 数据流封装并通过 **WebSocket**（`ws://` / `wss://`）传输，让您能够通过 Web 隧道（例如 **Cloudflare Quick Tunnel**）安全访问远程主机（如 **Kaggle Notebooks**、Google Colab、Docker 容器或 Linux VPS/虚拟机）上的任意内部服务——**无需开放原始 TCP/UDP 端口或固定 IP 地址**。
 
-当前项目目录包含预编译的 **Linux x86_64** 可执行文件 [`wsb.txt`](wsb.txt)（保存为 `.txt` 扩展名以便上传下载传输）以及服务端和客户端示例 TOML 配置文件。
+当前项目目录包含预编译的 **Linux x86_64** 可执行文件 [`wsb`](wsb) 以及服务端和客户端示例 TOML 配置文件。
 
 ## 目录
 
@@ -40,7 +40,7 @@
 
 | 特性 | 描述 |
 |---|---|
-| ⚡ **预编译 Linux 二进制** | 提供独立的 Linux `x86_64` ELF 可执行文件（`wsb.txt` → `wsb` v0.2.0），基于 Rust + Tokio（`tokio-tungstenite`）构建——低延迟、低内存占用、无需安装 Rust 工具链。 |
+| ⚡ **预编译 Linux 二进制** | 提供独立的 Linux `x86_64` ELF 可执行文件（`wsb` v0.2.0），基于 Rust + Tokio（`tokio-tungstenite`）构建——低延迟、低内存占用、无需安装 Rust 工具链。 |
 | 🔌 **TCP 隧道** | 转发任意 TCP 服务：MySQL、PostgreSQL、Redis、SSH、MongoDB、Kafka 等。 |
 | 📡 **UDP 隧道** | 传输 UDP 数据报（单包最大 64 KB，如 DNS、Syslog、游戏服务器），支持按来源地址自动会话跟踪（100 个数据包缓冲队列）及 60 秒空闲超时。 |
 | 🌐 **HTTP 隧道** | 访问远程 Web 应用（phpMyAdmin、REST API、管理后台），**自动重写 `Host` 请求头**为目标地址，支持 HTTP/1.1 Keep-Alive、`Content-Length`、`Transfer-Encoding: chunked` 以及 `Upgrade`/WebSocket 透传。 |
@@ -97,14 +97,11 @@
 
 ## 📦 准备工作
 
-在 Linux `x86_64` 上无需安装编译器或 Rust 工具链。将 [`wsb.txt`](wsb.txt) 重命名为 `wsb` 并赋予可执行权限：
+在 Linux `x86_64` 上无需安装编译器或 Rust 工具链。为 [`wsb`](wsb) 赋予可执行权限即可使用：
 
 ```bash
-mv wsb.txt wsb
 chmod +x wsb
 ```
-
-*（如果您希望在仓库目录中保留 `wsb.txt`，可使用 `cp wsb.txt wsb && chmod +x wsb`。）*
 
 验证程序：
 
@@ -347,7 +344,7 @@ target = "1.1.1.1:53"
 
 ```text
 ws_bridge/
-├── wsb.txt                 # 预编译 Linux x86_64 二进制文件 (v0.2.0；重命名为 wsb 并 chmod +x)
+├── wsb                     # 预编译 Linux x86_64 二进制文件 (v0.2.0)
 ├── config.server.toml      # 服务端配置示例
 ├── config.client.toml      # 客户端配置示例
 ├── README.md               # 说明文档（English）

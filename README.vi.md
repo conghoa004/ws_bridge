@@ -18,7 +18,7 @@
 
 **WSB (`wsb` v0.2.0)** đóng gói và truyền tải toàn bộ lưu lượng **TCP**, **UDP**, **HTTP** và **SOCKS5** thông qua **WebSocket** (`ws://` / `wss://`), giúp truy cập an toàn tới bất kỳ dịch vụ nội bộ nào trên máy chủ từ xa (như **Kaggle Notebooks**, Google Colab, Docker container hoặc Linux VPS/VM) qua các web tunnel như **Cloudflare Quick Tunnel** — **không cần mở cổng TCP/UDP thô hay có IP tĩnh**.
 
-Thư mục dự án hiện cung cấp sẵn bản dựng **Linux x86_64** [`wsb.txt`](wsb.txt) (được lưu dưới đuôi `.txt` để thuận tiện truyền/tải file) kèm theo các file cấu hình mẫu TOML cho server và client.
+Thư mục dự án hiện cung cấp sẵn bản dựng **Linux x86_64** [`wsb`](wsb) kèm theo các file cấu hình mẫu TOML cho server và client.
 
 ## Mục lục
 
@@ -40,7 +40,7 @@ Thư mục dự án hiện cung cấp sẵn bản dựng **Linux x86_64** [`wsb.
 
 | Tính năng | Mô tả |
 |---|---|
-| ⚡ **Bản dựng Linux dựng sẵn** | Cung cấp sẵn file thực thi độc lập cho Linux `x86_64` (`wsb.txt` → `wsb` v0.2.0) viết bằng Rust + Tokio (`tokio-tungstenite`) — độ trễ thấp, ít RAM, không cần cài Rust toolchain. |
+| ⚡ **Bản dựng Linux dựng sẵn** | Cung cấp sẵn file thực thi độc lập cho Linux `x86_64` (`wsb` v0.2.0) viết bằng Rust + Tokio (`tokio-tungstenite`) — độ trễ thấp, ít RAM, không cần cài Rust toolchain. |
 | 🔌 **TCP Tunnel** | Chuyển tiếp mọi dịch vụ TCP: MySQL, PostgreSQL, Redis, SSH, MongoDB, Kafka, v.v. |
 | 📡 **UDP Tunnel** | Truyền tải datagram UDP (tối đa 64 KB/gói, vd: DNS, Syslog, game server) với session tracking theo từng peer (hàng đợi 100 gói) và idle timeout 60 giây. |
 | 🌐 **HTTP Tunnel** | Truy cập ứng dụng web (phpMyAdmin, REST API, dashboard) với **tự động viết lại `Host` header** sang địa chỉ đích, hỗ trợ HTTP/1.1 Keep-Alive, `Content-Length`, `Transfer-Encoding: chunked` và passthrough cho `Upgrade`/WebSocket. |
@@ -97,14 +97,11 @@ Thư mục dự án hiện cung cấp sẵn bản dựng **Linux x86_64** [`wsb.
 
 ## 📦 Chuẩn bị
 
-Trên Linux `x86_64` không cần cài Rust hay trình biên dịch. Đổi tên [`wsb.txt`](wsb.txt) thành `wsb` và cấp quyền thực thi:
+Trên Linux `x86_64` không cần cài Rust hay trình biên dịch. Cấp quyền thực thi cho file [`wsb`](wsb):
 
 ```bash
-mv wsb.txt wsb
-chmod +x wsb
+chmod 755 ./wsb
 ```
-
-*(Hoặc dùng `cp wsb.txt wsb && chmod +x wsb` nếu bạn muốn giữ nguyên file `wsb.txt` trong thư mục.)*
 
 Kiểm tra nhanh:
 
@@ -347,7 +344,7 @@ target = "1.1.1.1:53"
 
 ```text
 ws_bridge/
-├── wsb.txt                 # Bản dựng Linux x86_64 dựng sẵn (v0.2.0; đổi tên thành wsb & chmod +x)
+├── wsb                     # Bản dựng Linux x86_64 dựng sẵn (v0.2.0)
 ├── config.server.toml      # Cấu hình mẫu cho server
 ├── config.client.toml      # Cấu hình mẫu cho client
 ├── README.md               # Tài liệu hướng dẫn (English)

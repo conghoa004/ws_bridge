@@ -18,7 +18,7 @@
 
 **WSB (`wsb` v0.2.0)** encapsulates and forwards **TCP**, **UDP**, **HTTP**, and **SOCKS5** traffic over **WebSocket** (`ws://` / `wss://`), allowing secure access to internal services on a remote host (such as **Kaggle Notebooks**, Google Colab, Docker containers, or Linux VPS/VMs) behind web tunnels like **Cloudflare Quick Tunnel** — **without opening raw TCP/UDP ports or needing a static IP**.
 
-This package includes the pre-built **Linux x86_64** executable [`wsb.txt`](wsb.txt) (stored with a `.txt` extension for convenient transfer/download) along with sample server and client TOML configurations.
+This package includes the pre-built **Linux x86_64** executable [`wsb`](wsb) along with sample server and client TOML configurations.
 
 ## Table of Contents
 
@@ -40,7 +40,7 @@ This package includes the pre-built **Linux x86_64** executable [`wsb.txt`](wsb.
 
 | Feature | Description |
 |---|---|
-| ⚡ **Pre-Built Linux Binary** | Ships as a standalone Linux `x86_64` ELF executable (`wsb.txt` → `wsb` v0.2.0) powered by Rust + Tokio (`tokio-tungstenite`) — low latency, minimal memory usage, no Rust toolchain required. |
+| ⚡ **Pre-Built Linux Binary** | Ships as a standalone Linux `x86_64` ELF executable (`wsb` v0.2.0) powered by Rust + Tokio (`tokio-tungstenite`) — low latency, minimal memory usage, no Rust toolchain required. |
 | 🔌 **TCP Tunnel** | Forward any TCP service: MySQL, PostgreSQL, Redis, SSH, MongoDB, Kafka, etc. |
 | 📡 **UDP Tunnel** | Forward UDP datagrams (up to 64 KB per packet, e.g., DNS, Syslog, game servers) with automatic per-peer session tracking (100-packet queue) and a 60s idle timeout. |
 | 🌐 **HTTP Tunnel** | Access remote web apps (phpMyAdmin, REST APIs, admin dashboards) with **automatic `Host` header rewriting** to the target address, supporting HTTP/1.1 Keep-Alive, `Content-Length`, `Transfer-Encoding: chunked`, and `Upgrade`/WebSocket passthrough. |
@@ -97,14 +97,11 @@ This package includes the pre-built **Linux x86_64** executable [`wsb.txt`](wsb.
 
 ## 📦 Getting Started
 
-No compiler or Rust toolchain is needed on Linux `x86_64`. Rename [`wsb.txt`](wsb.txt) to `wsb` and make it executable:
+No compiler or Rust toolchain is needed on Linux `x86_64`. Grant execute permission to [`wsb`](wsb):
 
 ```bash
-mv wsb.txt wsb
 chmod +x wsb
 ```
-
-*(Or use `cp wsb.txt wsb && chmod +x wsb` if you want to keep `wsb.txt` in the repository directory.)*
 
 Verify the binary:
 
@@ -347,7 +344,7 @@ target = "1.1.1.1:53"
 
 ```text
 ws_bridge/
-├── wsb.txt                 # Pre-built Linux x86_64 binary (v0.2.0; rename to wsb & chmod +x)
+├── wsb                     # Pre-built Linux x86_64 binary (v0.2.0)
 ├── config.server.toml      # Sample server configuration
 ├── config.client.toml      # Sample client configuration
 ├── README.md               # Documentation (English)
